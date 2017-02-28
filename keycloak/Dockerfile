@@ -11,7 +11,9 @@ COPY ad-integration-module-1.0.0.jar /keycloak/providers/ad-integration-module.j
 COPY realm-identity-provider-ad-oidc.html /keycloak/themes/base/admin/resources/partials/realm-identity-provider-ad-oidc.html
 COPY realm-identity-provider-keycloak-ad-oidc.html /keycloak/themes/base/admin/resources/partials/realm-identity-provider-keycloak-ad-oidc.html
 ADD jgroups-protocols.tar.gz /keycloak/modules/system/layers/base/org/jgroups-protocols.tar.gz
+
 ADD rootCA.crt /keycloak/rootCA.crt
 RUN /usr/lib/jvm/zulu-8-amd64/bin/keytool -importcert -noprompt -alias rootcert1 -keystore /usr/lib/jvm/zulu-8-amd64/jre/lib/security/cacerts -storepass changeit -file /keycloak/rootCA.crt
-CMD exec ./keycloak/bin/standalone.sh -b 0.0.0.0 -Djboss.bind.address=0.0.0.0 -Djboss.bind.address.management=0.0.0.0
+
+CMD exec ./keycloak/bin/standalone.sh --debug -b 0.0.0.0 -Djboss.bind.address=0.0.0.0 -Djboss.bind.address.management=0.0.0.0
 EXPOSE 8080 8443 9990

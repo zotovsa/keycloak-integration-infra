@@ -136,6 +136,8 @@ webpackJsonp([0],{
 	    };
 	    KeycloakInterceptor.prototype.intercept = function (observable) {
 	        return observable.catch(function (err, source) {
+	            if (!err)
+	                return Observable_1.Observable.empty();
 	            if (err.status == 401 && !_.endsWith(err.url, '/login')) {
 	                window.location.reload();
 	                return Observable_1.Observable.empty();
