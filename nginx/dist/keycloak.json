@@ -1,0 +1,7 @@
+{
+  "realm": "hello-world",
+  "auth-server-url": "https://keycloak-service-keycloak-integration.rhel-cdk.10.1.2.2.xip.io/auth",
+  "ssl-required": "external",
+  "resource": "hello-world-app",
+  "public-client": true
+}

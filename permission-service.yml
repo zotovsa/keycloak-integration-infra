@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: permission-service
+  annotations:
+    description: "permission-service"
+    iconClass: "icon-jboss"
+    tags: "permission-service"
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    name: zulu-openjdk
+  spec:
+    dockerImageRepository: azul/zulu-openjdk
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    name: permission-service
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    creationTimestamp: null
+    name: permission-service
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: permission-service:latest
+    resources: {}
+    source:
+      git:
+        ref: master
+        uri: http://gitlab.nmdemo:10080/nmca-poc/keycloak-integration-infra.git
+      contextDir: permission-service
+      type: Git
+    strategy:
+      type: Docker
+    triggers:
+    - type: ConfigChange
+    - imageChange: {}
+      type: ImageChange
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    name: permission-service
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: permission-service
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          deploymentconfig: permission-service
+      spec:
+        containers:
+        - env:
+          image: permission-service:latest
+          imagePullPolicy: Always
+          name: permission-service
+          livenessProbe:
+            tcpSocket:
+              port: 9999
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+          ports:
+          - containerPort: 9999
+            protocol: TCP
+          - containerPort: 7091
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - permission-service
+        from:
+          kind: ImageStreamTag
+          name: permission-service:latest
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: permission-service
+  spec:
+    ports:
+    - name: 9999-tcp
+      port: 9999
+      protocol: TCP
+      targetPort: 9999
+    - name: 7091-tcp
+      port: 7091
+      protocol: TCP
+      targetPort: 7091
+    selector:
+      deploymentconfig: permission-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}

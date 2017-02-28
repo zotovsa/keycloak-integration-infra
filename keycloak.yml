@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: keycloak-service
+  annotations:
+    description: "keycloak-service"
+    iconClass: "icon-jboss"
+    tags: "keycloak-service"
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    name: jboss-keycloak
+  spec:
+    dockerImageRepository: jboss/keycloak
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    name: keycloak-service
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    creationTimestamp: null
+    name: keycloak-service
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: keycloak-service:latest
+    resources: {}
+    source:
+      git:
+        ref: master
+        uri: http://gitlab.nmdemo:10080/nmca-poc/keycloak-integration-infra.git
+      contextDir: keycloak
+      type: Git
+    strategy:
+      type: Docker
+    triggers:
+    - type: ConfigChange
+    - imageChange: {}
+      type: ImageChange
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    name: keycloak-service
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: keycloak-service
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          deploymentconfig: keycloak-service
+      spec:
+        containers:
+        - env:
+          image: keycloak-service:latest
+          imagePullPolicy: Always
+          name: keycloak-service
+          livenessProbe:
+            tcpSocket:
+              port: 8443
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+          ports:
+          - containerPort: 8443
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - keycloak-service
+        from:
+          kind: ImageStreamTag
+          name: keycloak-service:latest
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: keycloak-service
+  spec:
+    ports:
+    - name: 8443-tcp
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+    - name: 9990-tcp
+      port: 9990
+      protocol: TCP
+      targetPort: 9990
+    selector:
+      deploymentconfig: keycloak-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}

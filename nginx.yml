@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: hello-world-app
+  annotations:
+    description: "hello-world-app"
+    iconClass: "icon-jboss"
+    tags: "hello-world-app"
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    name: nginx
+  spec:
+    dockerImageRepository: nginx
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    name: hello-world-app
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    creationTimestamp: null
+    name: hello-world-app
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: hello-world-app:latest
+    resources: {}
+    source:
+      git:
+        ref: master
+        uri: http://gitlab.nmdemo:10080/nmca-poc/keycloak-integration-infra.git
+      contextDir: nginx
+      type: Git
+    strategy:
+      type: Docker
+    triggers:
+    - type: ConfigChange
+    - imageChange: {}
+      type: ImageChange
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    name: hello-world-app
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: hello-world-app
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          deploymentconfig: hello-world-app
+      spec:
+        containers:
+        - env:
+          image: hello-world-app:latest
+          imagePullPolicy: Always
+          name: hello-world-app
+          livenessProbe:
+            tcpSocket:
+              port: 443
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          - containerPort: 443
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - hello-world-app
+        from:
+          kind: ImageStreamTag
+          name: hello-world-app:latest
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: hello-world-app
+  spec:
+    ports:
+    - name: 80-tcp
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: 443-tcp
+      port: 443
+      protocol: TCP
+      targetPort: 443
+    selector:
+      deploymentconfig: hello-world-app
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}

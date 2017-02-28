@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: hello-annotation-service
+  annotations:
+    description: "hello-annotation-service"
+    iconClass: "icon-jboss"
+    tags: "hello-annotation-service"
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    name: zulu-openjdk
+  spec:
+    dockerImageRepository: azul/zulu-openjdk
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    name: hello-annotation-service
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    creationTimestamp: null
+    name: hello-annotation-service
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: hello-annotation-service:latest
+    resources: {}
+    source:
+      git:
+        ref: master
+        uri: http://gitlab.nmdemo:10080/nmca-poc/keycloak-integration-infra.git
+      contextDir: hello-annotation-service
+      type: Git
+    strategy:
+      type: Docker
+    triggers:
+    - type: ConfigChange
+    - imageChange: {}
+      type: ImageChange
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    name: hello-annotation-service
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: hello-annotation-service
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          deploymentconfig: hello-annotation-service
+      spec:
+        containers:
+        - env:
+          image: hello-annotation-service:latest
+          imagePullPolicy: Always
+          name: hello-annotation-service
+          livenessProbe:
+            tcpSocket:
+              port: 9290
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+          ports:
+          - containerPort: 9290
+            protocol: TCP
+          - containerPort: 7091
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - hello-annotation-service
+        from:
+          kind: ImageStreamTag
+          name: hello-annotation-service:latest
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: hello-annotation-service
+  spec:
+    ports:
+    - name: 9290-tcp
+      port: 9290
+      protocol: TCP
+      targetPort: 9290
+    - name: 7091-tcp
+      port: 7091
+      protocol: TCP
+      targetPort: 7091
+    selector:
+      deploymentconfig: hello-annotation-service
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
