@@ -34,7 +34,7 @@ objects:
     source:
       git:
         ref: master
-        uri: https://github.com/zotovsa/keycloak-integration-infra.git
+        uri: http://gitlab.nmdemo:10080/nmca-poc/keycloak-integration-infra.git
       contextDir: permission-service
       type: Git
     strategy:

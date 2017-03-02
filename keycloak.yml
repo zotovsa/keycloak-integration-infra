@@ -34,7 +34,7 @@ objects:
     source:
       git:
         ref: master
-        uri: https://github.com/zotovsa/keycloak-integration-infra.git 
+        uri: http://gitlab.nmdemo:10080/nmca-poc/keycloak-integration-infra.git
       contextDir: keycloak
       type: Git
     strategy:
@@ -70,6 +70,8 @@ objects:
       spec:
         containers:
         - env:
+          - name: OPENSHIFT_DNS_PING_SERVICE_NAME
+            value: keycloak-service-nodes
           image: keycloak-service:latest
           imagePullPolicy: Always
           name: keycloak-service
@@ -80,6 +82,20 @@ objects:
             timeoutSeconds: 1
           ports:
           - containerPort: 8443
+            protocol: TCP
+          - containerPort: 11222
+            protocol: TCP
+          - containerPort: 11211
+            protocol: TCP
+          - containerPort: 9999
+            protocol: TCP
+          - containerPort: 57600
+            protocol: TCP
+          - containerPort: 7600
+            protocol: TCP
+          - containerPort: 8181
+            protocol: TCP
+          - containerPort: 8888
             protocol: TCP
           resources: {}
           terminationMessagePath: /dev/termination-log
@@ -113,9 +129,56 @@ objects:
       port: 9990
       protocol: TCP
       targetPort: 9990
+    - name: 11222-tcp
+      port: 11222
+      protocol: TCP
+      targetPort: 11222
+    - name: 11211-tcp
+      port: 11211
+      protocol: TCP
+      targetPort: 11211
+    - name: 9999-tcp
+      port: 9999
+      protocol: TCP
+      targetPort: 9999
+    - name: 57600-tcp
+      port: 57600
+      protocol: TCP
+      targetPort: 57600
+    - name: 7600-tcp
+      port: 7600
+      protocol: TCP
+      targetPort: 7600
+    - name: 8181-tcp
+      port: 8181
+      protocol: TCP
+      targetPort: 8181
+    - name: 8888-tcp
+      port: 8888
+      protocol: TCP
+      targetPort: 8888
     selector:
       deploymentconfig: keycloak-service
     sessionAffinity: None
     type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name:  keycloak-service-nodes
+  spec:
+    ports:
+    - name: 8888-tcp
+      port: 8888
+      protocol: TCP
+      targetPort: 8888
+    selector:
+      deploymentconfig: keycloak-service
+    sessionAffinity: None
+    type: ClusterIP
+    portalIP: None
+    clusterIP: None
   status:
     loadBalancer: {}
