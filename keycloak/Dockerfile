@@ -18,4 +18,6 @@ RUN /usr/lib/jvm/zulu-8-amd64/bin/keytool -importcert -noprompt -alias rootcert1
 COPY start.sh /keycloak/bin/
 RUN chmod a+x /keycloak/bin/start.sh
 CMD ["/keycloak/bin/start.sh"]
+RUN chgrp -R 0 /keycloak \
+  && chmod -R g+rwX /keycloak
 EXPOSE 8888 57600 7600 8080 8181 9990 9999 11211 11222
